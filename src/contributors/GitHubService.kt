@@ -25,6 +25,17 @@ interface GitHubService {
         @Path("owner") owner: String,
         @Path("repo") repo: String
     ): Call<List<User>>
+
+    @GET("orgs/{org}/repos?per_page=100")
+    suspend fun getOrgRepos(
+        @Path("org") org: String
+    ): Response<List<Repo>>
+
+    @GET("repos/{owner}/{repo}/contributors?per_page=100")
+    suspend fun getRepoContributors(
+        @Path("owner") owner: String,
+        @Path("repo") repo: String
+    ): Response<List<User>>
 }
 
 @Serializable
@@ -46,6 +57,8 @@ data class RequestData(
     val org: String
 )
 
+private val json = Json { ignoreUnknownKeys = true }
+
 @OptIn(ExperimentalSerializationApi::class)
 fun createGitHubService(username: String, password: String): GitHubService {
     val authToken = "Basic " + Base64.getEncoder().encode("$username:$password".toByteArray()).toString(Charsets.UTF_8)
@@ -63,7 +76,7 @@ fun createGitHubService(username: String, password: String): GitHubService {
     val contentType = "application/json".toMediaType()
     val retrofit = Retrofit.Builder()
         .baseUrl("https://api.github.com")
-        .addConverterFactory(Json { ignoreUnknownKeys = true }.asConverterFactory(contentType))
+        .addConverterFactory(json.asConverterFactory(contentType))
         .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
         .client(httpClient)
         .build()
